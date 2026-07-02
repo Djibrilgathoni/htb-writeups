@@ -4,9 +4,9 @@ A collection of HackTheBox Sherlock and Machine writeups documenting my blue tea
 
 ## Sherlocks
 | Name | Category | Difficulty |
-|---|---|---|
+|------|----------|------------|
 | [Vantage](Sherlocks/Vantage/Vantage.md) | Cloud Forensics | Easy |
-| [Telly](Sherlocks/Telly/Telly.md) | DFIR & Network Forensics |Easy |
+| [Telly](Sherlocks/Telly/README.md) | Network Forensics / DFIR | Easy |
 
 ## Connect
 - [LinkedIn](https://linkedin.com/in/djibrilgathoni)
