@@ -369,5 +369,3 @@ Quinn Harris's credit card number: **`5312269047781209`**
 ```
 
 ---
-
-That's the full writeup. Save it as `README.md` inside a `telly/` folder in your `htb-writeups` repo. Want me to help you structure the folder or write the commit message?
