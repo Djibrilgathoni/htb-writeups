@@ -10,6 +10,7 @@ A collection of HackTheBox Sherlock and Machine writeups documenting my blue tea
 | [Telly](https://github.com/Djibrilgathoni/htb-writeups/blob/main/Sherlocks/Telly/Telly.md)                | Network Forensics / DFIR  | Easy       |
 | [MangoBleed](https://github.com/Djibrilgathoni/htb-writeups/blob/main/Sherlocks/MangoBleed/MangoBleed.md) | Endpoint Forensics / DFIR | Easy       |
 | [Brutus](https://github.com/Djibrilgathoni/htb-writeups/blob/main/Sherlocks/Brutus/Brutus.md)             | Endpoint Forensics / DFIR | Easy       |
+| [RomCom](https://github.com/Djibrilgathoni/htb-writeups/blob/main/Sherlocks/RomCom/RomCom.md)             | DFIR / Threat Intelligence | Easy      |
 
 ## Connect
 
