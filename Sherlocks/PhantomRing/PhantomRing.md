@@ -1,49 +1,5 @@
-# HTB Sherlock: PhantomRing
-
-**Category:** Digital Forensics & Incident Response (DFIR) — Malware Static Analysis
-**Difficulty:** Beginner
-**Tools Used:** `7z`, `file`, `md5sum`/`sha256sum`, `strings`, `objdump`, manual x86-64 disassembly analysis
-
----
-
-## Scenario
-
-Our organization's SOC team intercepted a suspicious binary during a routine threat hunting operation on a Linux server. The file was found in `/var/tmp` with an unusual name and was attempting to establish outbound connections. Initial analysis suggested this could be a post-exploitation agent. The objective was to perform static analysis on the binary to identify its capabilities, extract indicators of compromise (IOCs), and understand the threat actor's infrastructure — all without executing the sample.
-
----
-
-## 1. Initial Triage
-
-**Command:**
-```bash
-7z x PhantomRing.zip
-ls -la phantom_ring
-file phantom_ring/agent
-```
-
-**Breakdown:**
-The archive was password-protected (standard HTB convention). Extraction revealed a single 31,192-byte executable named `agent`. Running `file` confirmed a 64-bit ELF binary — dynamically linked and, critically, **not stripped**, meaning the symbol table (`.symtab`) was intact. This was a significant break for analysis, since every function name (including custom `cmd_*` handlers) would be readable directly in disassembly rather than requiring manual reverse-engineering of unnamed functions.
-
-**Result:** Confirmed target: an unstripped, dynamically linked x86-64 ELF binary posing as a post-exploitation implant.
-
----
-
-## 2. Task 1 — Binary Hash
-
-**Command:**
-```bash
-sha256sum phantom_ring/agent
-```
-
-**Breakdown:**
-Hashing the sample provides a unique fingerprint for threat-intel correlation, blocklisting, and sharing with other defenders — standard first step in any malware triage workflow.
-
-**Result:**
-```
-2d7b1b2178f76c26893b2a56cbf9b36700235259e76b893d53817d5b66b634a5
-```
-
-![Task 1](images/task01_hash.png)
+![Task 1 terminal](screenshots/Task_1.png)
+![Task 1 confirmed](screenshots/Answer_to_task_1.png)
 
 ---
 
@@ -77,8 +33,10 @@ The immediate value `0x115d` is passed directly into `htons()`, which handles ne
 - C2 IP: `192.168.56.1`
 - C2 Port: `0x115d` = **4445**
 
-![Task 2](images/task02_ip.png)
-![Task 3](images/task03_port.png)
+![Task 2 terminal](screenshots/Task_2.png)
+![Task 2 confirmed](screenshots/Answer_to_task_2.png)
+![Task 3 terminal](screenshots/Task_3.png)
+![Task 3 confirmed](screenshots/Answer_to_task_3.png)
 
 ---
 
@@ -104,7 +62,8 @@ Two calls to `sleep@plt` were found, both immediately following a `close()` call
 
 **Result:** `0x78` = **120 seconds** between reconnect attempts.
 
-![Task 4](images/task04_reconnect.png)
+![Task 4 terminal](screenshots/Task_4.png)
+![Task 4 confirmed](screenshots/Answer_to_task_4.png)
 
 ---
 
@@ -139,7 +98,8 @@ If none match, execution falls through to a `send_all` call returning a fixed 29
 
 **Result:** **11 commands.**
 
-![Task 5](images/task05_commands.png)
+![Task 5 terminal](screenshots/Task_5.png)
+![Task 5 confirmed](screenshots/Answer_to_task_5.png)
 
 ---
 
@@ -152,7 +112,8 @@ Most Linux EDR and monitoring tools hook or trace individual syscalls (`connect(
 
 **Result:** **io_uring**
 
-![Task 6](images/task06_iouring.png)
+![Task 6 terminal](screenshots/Task_6.png)
+![Task 6 confirmed](screenshots/Answer_to_task_6.png)
 
 ---
 
@@ -170,7 +131,9 @@ strings -t x phantom_ring/agent | grep -i "utmp"
 
 **Result:** `/var/run/utmp`
 
-![Task 7](images/task07_utmp.png)
+![Task 7 terminal](screenshots/Task_7.png)
+![Task 7 breakdown](screenshots/How_I_got_answer_to_task_7.png)
+![Task 7 confirmed](screenshots/Answer_to_task_7.png)
 
 ---
 
@@ -187,7 +150,8 @@ strings -t x phantom_ring/agent | awk '$1=="527f"'
 
 **Result:** `/usr/bin`
 
-![Task 8](images/task08_suid.png)
+![Task 8 terminal](screenshots/Task_8.png)
+![Task 8 confirmed](screenshots/Answer_to_task_8.png)
 
 ---
 
@@ -203,7 +167,8 @@ strings -t x phantom_ring/agent | grep -i "maps\|proc/%\|bpf\|ebpf"
 
 **Result:** `anon_inode:bpf-map`
 
-![Task 9](images/task09_ebpf.png)
+![Task 9 terminal](screenshots/Task_9.png)
+![Task 9 confirmed](screenshots/Answer_to_task_9.png)
 
 ---
 
@@ -226,7 +191,8 @@ Alongside killing eBPF-holding processes, `cmd_killbpf` also disables kernel-lev
 
 **Result:** `/sys/kernel/debug/tracing/tracing_on`
 
-![Task 10](images/task10_tracing.png)
+![Task 10 terminal](screenshots/Task_10.png)
+![Task 10 confirmed](screenshots/Answer_to_task_10.png)
 
 ---
 
@@ -243,7 +209,8 @@ strings -t x phantom_ring/agent | awk '$1=="52e5"'
 
 **Result:** `/proc/self/exe`
 
-![Task 11](images/task11_selfdestruct.png)
+![Task 11 terminal](screenshots/Task_11.png)
+![Task 11 confirmed](screenshots/Answer_to_task_11.png)
 
 ---
 
@@ -260,7 +227,8 @@ Unlike most other commands (compared via `strncmp` on a fixed prefix length), th
 
 **Result:** `sdestruct`
 
-![Task 12](images/task12_trigger.png)
+![Task 12 terminal](screenshots/Task_12.png)
+![Task 12 confirmed](screenshots/Answer_to_task_12.png)
 
 ---
 
@@ -315,4 +283,3 @@ Unlike most other commands (compared via `strncmp` on a fixed prefix length), th
 ---
 
 **HTB Profile:** [3131185](https://labs.hackthebox.com/achievement/sherlock/3131185/1296)
-
