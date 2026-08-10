@@ -47,7 +47,7 @@ Param3: 0:0:fe80::d18c:695%1989170785
 
 **Answer:** `2025-01-24 10:15:14`
 
-![Task 1 and 2 proof](screenshots/Task_1_and_2.png)
+![Task 1 and 2 proof](screenshots/Task 1 and 2.png)
 
 ---
 
@@ -90,7 +90,7 @@ The download-check event and the subsequent installed-executable event, ~13 seco
 
 **Answer:** `WinRAR`
 
-![Answer to task 2 proof](screenshots/Answer_to_task_2.png)
+![Answer to task 2 proof](screenshots/Answer to task 2.png)
 
 ---
 
@@ -111,7 +111,7 @@ C:\Users\Dutch\Downloads\Everything.exe
 
 **Answer:** `C:\Users\Dutch\Downloads\Everything.exe`
 
-![Task 3 and 4 proof](screenshots/Task_3_and_4.png)
+![Task 3 and 4 proof](screenshots/Task 3 and 4.png)
 
 ---
 
@@ -124,7 +124,7 @@ C:\Users\Dutch\Downloads\Everything.exe
 
 **Answer:** `2025-01-24 10:17:33`
 
-![Answer to task 4 proof](screenshots/Answer_to_task_4.png)
+![Answer to task 4 proof](screenshots/Answer to task 4.png)
 
 ---
 
@@ -143,7 +143,7 @@ Roughly 90 seconds after Everything.exe finished its lookup, two PDFs inside Dut
 - Task 5: `C:\Users\Dutch\Documents\2025- Board of directors Documents\Ministry Of Defense Audit.pdf`
 - Task 6: `C:\Users\Dutch\Documents\2025- Board of directors Documents\2025-BUDGET-ALLOCATION-CONFIDENTIAL.pdf`
 
-![Task 5 and 6 proof](screenshots/Task_5_and_6.png)
+![Task 5 and 6 proof](screenshots/Task 5 and 6.png)
 
 ---
 
@@ -162,7 +162,7 @@ Following the same `applicationLookup` → installed-executable pattern used for
 - Task 7: `MEGAsync`
 - Task 8: `2025-01-24 10:22:19`
 
-![Task 7 and 8 proof](screenshots/Task_7_and_8.png)
+![Task 7 and 8 proof](screenshots/Task 7 and 8.png)
 
 ---
 
@@ -179,7 +179,7 @@ Final tool in the download chain — a "File Shredder" installer, downloaded and
 
 **Answer:** `File Shredder`
 
-![Answer to task 9 proof](screenshots/Answer_to_task_9.png)
+![Answer to task 9 proof](screenshots/Answer to task 9.png)
 
 ---
 
@@ -206,6 +206,8 @@ Event ID 1102 (`Microsoft-Windows-Eventlog` provider) marks the exact moment an 
 **Answer:** `2025-01-24 10:28:41`
 
 Notably, the clear happened under Dutch's own account — the intruder operated as Dutch throughout, rather than creating a separate identity, consistent with a compromised-credential RDP session rather than a new local account being provisioned.
+
+![Answer to task 10 proof](screenshots/Answer_to_task_10.png)
 
 ---
 
@@ -245,5 +247,4 @@ Full intrusion-to-anti-forensics window: **~13 minutes**.
 - **Log clearing is self-defeating without deletion prevention.** Event 1102 exists specifically to flag its own predecessor's absence — a cleared log is itself evidence. Forwarding logs to a centralized, write-once collector (e.g. a SIEM) would have preserved the full picture even after the local clear.
 - **Standalone/isolated hosts still need EDR.** The fileserver was deliberately kept off the breach-prone domain, but lacked any execution-blocking control — SmartScreen only logs and warns, it doesn't prevent. An EDR agent with process-blocking could have stopped WinRAR/MEGAsync/Shredder execution outright.
 - **RDP exposure requires MFA.** A single compromised credential (Dutch's own account) was sufficient for full RDP access with no secondary factor challenged.
-
 
