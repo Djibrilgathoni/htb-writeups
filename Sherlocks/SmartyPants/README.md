@@ -47,8 +47,7 @@ Param3: 0:0:fe80::d18c:695%1989170785
 
 **Answer:** `2025-01-24 10:15:14`
 
-![Task 1 and 2 proof](screenshots/Task 1 and 2.png)
-
+![Task 1 and 2 proof](screenshots/Task%201%20and%202.png)
 ---
 
 ## Task 2 — First Tool Downloaded & Installed
@@ -90,7 +89,7 @@ The download-check event and the subsequent installed-executable event, ~13 seco
 
 **Answer:** `WinRAR`
 
-![Answer to task 2 proof](screenshots/Answer to task 2.png)
+![Answer to task 2 proof](screenshots/Answer%20to%20task%202.png)
 
 ---
 
@@ -111,8 +110,7 @@ C:\Users\Dutch\Downloads\Everything.exe
 
 **Answer:** `C:\Users\Dutch\Downloads\Everything.exe`
 
-![Task 3 and 4 proof](screenshots/Task 3 and 4.png)
-
+![Task 3 and 4 proof](screenshots/Task%203%20and%204.png)
 ---
 
 ## Task 4 — Execution Time of Everything.exe
@@ -124,8 +122,7 @@ C:\Users\Dutch\Downloads\Everything.exe
 
 **Answer:** `2025-01-24 10:17:33`
 
-![Answer to task 4 proof](screenshots/Answer to task 4.png)
-
+![Answer to task 4 proof](screenshots/Answer%20to%20task%204.png)
 ---
 
 ## Task 5 & 6 — Documents Breached
@@ -143,8 +140,7 @@ Roughly 90 seconds after Everything.exe finished its lookup, two PDFs inside Dut
 - Task 5: `C:\Users\Dutch\Documents\2025- Board of directors Documents\Ministry Of Defense Audit.pdf`
 - Task 6: `C:\Users\Dutch\Documents\2025- Board of directors Documents\2025-BUDGET-ALLOCATION-CONFIDENTIAL.pdf`
 
-![Task 5 and 6 proof](screenshots/Task 5 and 6.png)
-
+![Task 5 and 6 proof](screenshots/Task%205%20and%206.png)
 ---
 
 ## Task 7 & 8 — Cloud Exfiltration Utility
@@ -162,8 +158,7 @@ Following the same `applicationLookup` → installed-executable pattern used for
 - Task 7: `MEGAsync`
 - Task 8: `2025-01-24 10:22:19`
 
-![Task 7 and 8 proof](screenshots/Task 7 and 8.png)
-
+![Task 7 and 8 proof](screenshots/Task%207%20and%208.png)
 ---
 
 ## Task 9 — Anti-Forensic Destruction Utility
@@ -179,8 +174,7 @@ Final tool in the download chain — a "File Shredder" installer, downloaded and
 
 **Answer:** `File Shredder`
 
-![Answer to task 9 proof](screenshots/Answer to task 9.png)
-
+![Answer to task 9 proof](screenshots/Answer%20to%20task%209.png)
 ---
 
 ## Task 10 — Security Log Clear Time
