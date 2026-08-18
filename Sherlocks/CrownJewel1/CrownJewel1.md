@@ -51,11 +51,13 @@ EOF
 python3 parse_vss.py
 ```
 
-![Task 1](screenshots/Task%201.png)
+![Task 1 terminal evidence](screenshots/Answer%20to%20task%201.png)
 
 The event showed `param1: Volume Shadow Copy`, `param2: running`, logged by the Service Control Manager on `DC01.forela.local`.
 
 **Answer:** `2024-05-14 03:42:16`
+
+![Task 1 confirmed](screenshots/Task%201.png)
 
 ---
 
@@ -79,11 +81,13 @@ EOF
 python3 parse_4799.py > events_4799.txt
 ```
 
-![Task 2](screenshots/Task%202.png)
+![Task 2 terminal evidence](screenshots/Answer%20to%20task%202.png)
 
 At `03:42:16.79`, two consecutive 4799 events fired with `CallerProcessName: C:\Windows\System32\VSSVC.exe`, `SubjectUserName: DC01$`, checking membership against **Administrators** (`S-1-5-32-544`) and **Backup Operators** (`S-1-5-32-551`) — both groups carry the backup/restore privileges VSS needs to snapshot the volume.
 
 **Answer:** `Administrators, Backup Operators, DC01$`
+
+![Task 2 & 3 confirmed](screenshots/Task%202%20and%203.png)
 
 ---
 
@@ -95,9 +99,11 @@ The same 4799 events tied to `VSSVC.exe` carry its `CallerProcessId` in hex.
 python3 -c "print(int('0x1190', 16))"
 ```
 
-![Task 3](screenshots/Task%203.png)
+![Task 3 terminal evidence](screenshots/Answer%20to%20task%203.png)
 
 **Answer:** `4496`
+
+![Task 2 & 3 confirmed](screenshots/Task%202%20and%203.png)
 
 ---
 
@@ -117,11 +123,13 @@ for e in events:
 "
 ```
 
-![Task 4](screenshots/Task%204.png)
+![Task 4 terminal evidence](screenshots/Answer%20to%20task%204.png)
 
 The `VolumeId` field itself was empty for the shadow copy device, but every event tied to it — mount (EventID 4, 03:44:22), close (EventID 9), and dismount (EventID 300–303, 03:46:47) — carried the same `VolumeCorrelationId`, NTFS's internal identifier for the volume object across its lifecycle.
 
 **Answer:** `{06c4a997-cca8-11ed-a90f-000c295644f9}`
+
+![Task 4 & 5 confirmed](screenshots/Task%204%20and%205.png)
 
 ---
 
@@ -169,11 +177,13 @@ print('\\\\'.join(path_parts))
 "
 ```
 
-![Task 5](screenshots/Task%205.png)
+![Task 5 terminal evidence](screenshots/Answer%20to%20task%205.png)
 
 The chain resolved to `C:\Users\Administrator\Documents\backup_sync_dc` — the attacker staged the dump inside the Domain Administrator's own Documents folder, disguised behind an innocuous "backup sync" name.
 
 **Answer:** `C:\Users\Administrator\Documents\backup_sync_dc\ntds.dit`
+
+![Task 4 & 5 confirmed](screenshots/Task%204%20and%205.png)
 
 ---
 
@@ -181,11 +191,13 @@ The chain resolved to `C:\Users\Administrator\Documents\backup_sync_dc` — the 
 
 The `$SI` Creation Time and all four `$FN` timestamps on MFT record 97945 agree: `2024-05-14T03:44:22.813Z` — matching the shadow copy mount event down to the millisecond.
 
-![Task 6](screenshots/Task%206.png)
+![Task 6 terminal evidence](screenshots/Answer%20to%20task%206.png)
 
-Notably, the `$SI` **Modification Time** on this record reads `2023-03-27T14:02:43.932Z`, over a year *before* the creation time,  a classic timestomping artifact. The attacker's tooling appears to have copied the legitimate `ntds.dit`'s original modified-time metadata onto the new copy to make it look less suspicious, but this didn't propagate to the `$FN` attributes, which still show the true creation time.
+Notably, the `$SI` **Modification Time** on this record reads `2023-03-27T14:02:43.932Z`, over a year *before* the creation time — a classic timestomping artifact. The attacker's tooling appears to have copied the legitimate `ntds.dit`'s original modified-time metadata onto the new copy to make it look less suspicious, but this didn't propagate to the `$FN` attributes, which still show the true creation time.
 
 **Answer:** `2024-05-14 03:44:22`
+
+![Task 6 & 7 confirmed](screenshots/Task%206%20and%207.png)
 
 ---
 
@@ -223,9 +235,11 @@ for record in parser.entries():
 "
 ```
 
-![Task 7](screenshots/Task%207.png)
+![Task 7 terminal evidence](screenshots/Answer%20to%20task%207.png)
 
 **Answer:** `SYSTEM, 17563648`
+
+![Task 6 & 7 confirmed](screenshots/Task%206%20and%207.png)
 
 ---
 
@@ -245,7 +259,7 @@ for record in parser.entries():
 
 ## Key Takeaways
 
-- **`vssadmin` / VSS abuse** is a quiet, "living-off-the-land" path to dumping `NTDS.dit` without touching the Domain Controller's live filesystem protections, but it still leaves a clean trail across the System, Security, and NTFS operational event logs.
+- **`vssadmin` / VSS abuse** is a quiet, "living-off-the-land" path to dumping `NTDS.dit` without touching the Domain Controller's live filesystem protections — but it still leaves a clean trail across the System, Security, and NTFS operational event logs.
 - **Event ID 7036** (service state change) and **Event ID 4799** (group membership enumeration) together pinpoint exactly when and under what privileges a shadow copy was created.
 - **NTFS operational logs** (`Microsoft-Windows-Ntfs/Operational`) track volume mount/dismount lifecycles via `VolumeCorrelationId`, even for ephemeral shadow copy devices that never get a proper `Volume{GUID}`.
 - **`$MFT` parent-record chains** can reconstruct full file paths even when a tool like `analyzemft` doesn't expose `Filepath` directly — useful when hunting for staged/exfil files.
