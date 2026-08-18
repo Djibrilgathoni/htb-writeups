@@ -183,7 +183,7 @@ The `$SI` Creation Time and all four `$FN` timestamps on MFT record 97945 agree:
 
 ![Task 6](screenshots/Task%206.png)
 
-Notably, the `$SI` **Modification Time** on this record reads `2023-03-27T14:02:43.932Z`, over a year *before* the creation time — a classic timestomping artifact. The attacker's tooling appears to have copied the legitimate `ntds.dit`'s original modified-time metadata onto the new copy to make it look less suspicious, but this didn't propagate to the `$FN` attributes, which still show the true creation time.
+Notably, the `$SI` **Modification Time** on this record reads `2023-03-27T14:02:43.932Z`, over a year *before* the creation time,  a classic timestomping artifact. The attacker's tooling appears to have copied the legitimate `ntds.dit`'s original modified-time metadata onto the new copy to make it look less suspicious, but this didn't propagate to the `$FN` attributes, which still show the true creation time.
 
 **Answer:** `2024-05-14 03:44:22`
 
@@ -245,7 +245,7 @@ for record in parser.entries():
 
 ## Key Takeaways
 
-- **`vssadmin` / VSS abuse** is a quiet, "living-off-the-land" path to dumping `NTDS.dit` without touching the Domain Controller's live filesystem protections — but it still leaves a clean trail across the System, Security, and NTFS operational event logs.
+- **`vssadmin` / VSS abuse** is a quiet, "living-off-the-land" path to dumping `NTDS.dit` without touching the Domain Controller's live filesystem protections, but it still leaves a clean trail across the System, Security, and NTFS operational event logs.
 - **Event ID 7036** (service state change) and **Event ID 4799** (group membership enumeration) together pinpoint exactly when and under what privileges a shadow copy was created.
 - **NTFS operational logs** (`Microsoft-Windows-Ntfs/Operational`) track volume mount/dismount lifecycles via `VolumeCorrelationId`, even for ephemeral shadow copy devices that never get a proper `Volume{GUID}`.
 - **`$MFT` parent-record chains** can reconstruct full file paths even when a tool like `analyzemft` doesn't expose `Filepath` directly — useful when hunting for staged/exfil files.
